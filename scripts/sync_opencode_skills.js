@@ -18,7 +18,7 @@ const fileExists = async (filePath) => {
   }
 };
 
-const parseFrontmatter = (content: string) => {
+const parseFrontmatter = (content) => {
   const match = content.match(FRONTMATTER_REGEX);
   if (!match) {
     return { frontmatter: {}, body: content };
@@ -50,7 +50,7 @@ const deriveDescription = (frontmatter, body) => {
   return headingMatch ? headingMatch[1].trim() : "";
 };
 
-const normalizeBody = (body: string) => body.replace(/^\s+/, "");
+const normalizeBody = (body) => body.replace(/^\s+/, "");
 
 const validateName = (name) => {
   if (!SKILL_NAME_REGEX.test(name)) {
@@ -76,7 +76,7 @@ const collectSkills = async () => {
     const skillPath = path.join(SKILLS_DIR, dirName);
     const skillFile = path.join(skillPath, "SKILL.md");
     const fallbackFile = path.join(skillPath, "skill.md");
-    let fileToRead: string | null = null;
+    let fileToRead = null;
 
     if (await fileExists(skillFile)) {
       fileToRead = skillFile;
