@@ -2,6 +2,7 @@ import { definePlugin } from "@opencode-ai/plugin";
 
 const TEST_PATH_REGEX = /(\b__tests__\b|\btests?\b|\.spec\.|\.test\.|_spec\.|_test\.)/i;
 const COMPLETION_REGEX = /\b(done|complete|completed|finished|ready|implemented|resolved)\b/i;
+const DOC_PATH_REGEX = /(\bdocs\b|readme|\.md$)/i;
 
 const SKILL_HINTS = [
   { pattern: /\bbrainstorm|idea|explore\b/i, skill: "brainstorming" },
@@ -62,7 +63,7 @@ export default definePlugin((client) => {
     touchedFiles.add(path);
     if (TEST_PATH_REGEX.test(path)) {
       touchedTests = true;
-    } else {
+    } else if (!DOC_PATH_REGEX.test(path)) {
       touchedSources = true;
     }
   });
