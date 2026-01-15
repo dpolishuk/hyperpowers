@@ -1,5 +1,5 @@
-import { promises as fs } from "fs";
-import path from "path";
+const fs = require("fs").promises;
+const path = require("path");
 
 const SKILL_NAME_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_NAME_LENGTH = 64;
@@ -9,7 +9,7 @@ const OUTPUT_DIR = path.join(process.cwd(), ".opencode", "skill");
 
 const FRONTMATTER_REGEX = /^---\s*\n([\s\S]*?)\n---\s*\n?/;
 
-const fileExists = async (filePath: string): Promise<boolean> => {
+const fileExists = async (filePath) => {
   try {
     await fs.access(filePath);
     return true;
@@ -24,7 +24,7 @@ const parseFrontmatter = (content: string) => {
     return { frontmatter: {}, body: content };
   }
 
-  const frontmatter: Record<string, string> = {};
+  const frontmatter = {};
   const lines = match[1].split(/\r?\n/);
   for (const line of lines) {
     const entry = line.match(/^([a-zA-Z0-9_-]+):\s*(.*)$/);
@@ -41,7 +41,7 @@ const parseFrontmatter = (content: string) => {
   };
 };
 
-const deriveDescription = (frontmatter: Record<string, string>, body: string) => {
+const deriveDescription = (frontmatter, body) => {
   if (frontmatter.description) {
     return frontmatter.description.trim();
   }
@@ -52,7 +52,7 @@ const deriveDescription = (frontmatter: Record<string, string>, body: string) =>
 
 const normalizeBody = (body: string) => body.replace(/^\s+/, "");
 
-const validateName = (name: string) => {
+const validateName = (name) => {
   if (!SKILL_NAME_REGEX.test(name)) {
     throw new Error(
       `Skill name "${name}" must match ${SKILL_NAME_REGEX.source}.`
@@ -70,11 +70,7 @@ const collectSkills = async () => {
     .map((entry) => entry.name)
     .sort((a, b) => a.localeCompare(b));
 
-  const skills = [] as Array<{
-    slug: string;
-    description: string;
-    body: string;
-  }>;
+  const skills = [];
 
   for (const dirName of skillDirs) {
     const skillPath = path.join(SKILLS_DIR, dirName);
@@ -112,8 +108,27 @@ const collectSkills = async () => {
   return skills;
 };
 
-const writeSkills = async (skills: Array<{ slug: string; description: string; body: string }>) => {
+const removeStaleSkills = async (skills) => {
+  if (!(await fileExists(OUTPUT_DIR))) {
+    return;
+  }
+
+  const allowed = new Set(skills.map((skill) => skill.slug));
+  const entries = await fs.readdir(OUTPUT_DIR, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    if (!allowed.has(entry.name)) {
+      await fs.rm(path.join(OUTPUT_DIR, entry.name), { recursive: true, force: true });
+    }
+  }
+};
+
+const writeSkills = async (skills) => {
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
+  await removeStaleSkills(skills);
 
   for (const skill of skills) {
     const skillDir = path.join(OUTPUT_DIR, skill.slug);
