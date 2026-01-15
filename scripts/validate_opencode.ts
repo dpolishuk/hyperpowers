@@ -22,7 +22,7 @@ const fileExists = async (filePath) => {
   }
 };
 
-const parseFrontmatter = (content: string) => {
+const parseFrontmatter = (content) => {
   const match = content.match(FRONTMATTER_REGEX);
   if (!match) {
     return null;
