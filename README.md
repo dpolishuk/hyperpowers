@@ -122,7 +122,7 @@ opencode
 This enables:
 - Commands from `.opencode/command/*.md` (invoked as `/<command>`, e.g. `/brainstorm`)
 - Agents from `.opencode/agent/*.md` (e.g. `@code-reviewer`, `@test-runner`)
-- Skills via `opencode-skills` auto-discovery from `.opencode/skills/hyperpowers-*`
+- Skills via local skill discovery from `.opencode/skills/`
 - Safety guardrails plugin from `.opencode/plugin/hyperpowers-safety.ts`
 
 **Verify in OpenCode:**
@@ -131,25 +131,44 @@ This enables:
 - Verify skills tools exist by running any Hyperpowers command (they reference tools like `skills_hyperpowers_brainstorming`)
 - Optional safety check: try reading `.env` (it should be blocked by the safety plugin)
 
-**Option B: Install the safety plugin into any OpenCode project (npm)**
+**Option B: Install locally (no OpenCode plugin installs)**
 
-1. Add the plugin to your project's `opencode.json`:
+This is the fully local path: no `"plugin": [...]` in `opencode.json`.
+
+1. Copy the `.opencode/` directory into your project (or use this repo directly).
+2. Install plugin dependencies locally:
+
+```bash
+cd .opencode
+bun install
+cd ..
+```
+
+3. Start OpenCode from the project root:
+
+```bash
+opencode
+```
+
+Notes:
+- Skill tools are provided by the local skills loader plugin: `.opencode/plugin/hyperpowers-skills.ts`.
+- Safety guardrails are provided by: `.opencode/plugin/hyperpowers-safety.ts`.
+- `bun install` downloads dependencies (e.g. `@opencode-ai/plugin`, `gray-matter`, `zod`) but does not require installing any OpenCode plugins via npm.
+
+**Option C: Install the safety plugin into any OpenCode project (npm)**
+
+If you prefer a config-only install, add the plugin to your project's `opencode.json`:
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
-    "opencode-skills",
     "@dpolishuk/hyperpowers-opencode"
   ]
 }
 ```
 
-2. Restart OpenCode.
-
-Notes:
-- `@dpolishuk/hyperpowers-opencode` ships safety guardrails (blocks reading `.env*`, editing `.git/hooks/*`, `git push --force`, and `rm -rf`).
-- Hyperpowers skills/commands/agents are repo-scoped. If you want them in another project, copy the `.opencode/` directory into that project (or package them separately).
+Then restart OpenCode.
 
 ### Claude Code
 
