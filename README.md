@@ -106,9 +106,56 @@ Task("Run tests", "Run pytest tests/")
 
 ## Installation
 
+### OpenCode
+
+Hyperpowers includes first-class OpenCode integration (commands, agents, skills, and a safety plugin).
+
+**Option A: Use Hyperpowers in this repo (recommended for contributors)**
+
+1. Install OpenCode.
+2. Run OpenCode from the repo root (so it discovers `opencode.json` and `.opencode/`):
+
+```bash
+opencode
+```
+
+This enables:
+- Commands from `.opencode/command/*.md` (invoked as `/<command>`, e.g. `/brainstorm`)
+- Agents from `.opencode/agent/*.md` (e.g. `@code-reviewer`, `@test-runner`)
+- Skills via `opencode-skills` auto-discovery from `.opencode/skills/hyperpowers-*`
+- Safety guardrails plugin from `.opencode/plugin/hyperpowers-safety.ts`
+
+**Verify in OpenCode:**
+- Type `/brainstorm` and confirm OpenCode expands the prompt from `.opencode/command/brainstorm.md`
+- Invoke an agent like `@code-reviewer` and confirm it runs in subagent mode
+- Verify skills tools exist by running any Hyperpowers command (they reference tools like `skills_hyperpowers_brainstorming`)
+- Optional safety check: try reading `.env` (it should be blocked by the safety plugin)
+
+**Option B: Install the safety plugin into any OpenCode project (npm)**
+
+1. Add the plugin to your project's `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "opencode-skills",
+    "@dpolishuk/hyperpowers-opencode"
+  ]
+}
+```
+
+2. Restart OpenCode.
+
+Notes:
+- `@dpolishuk/hyperpowers-opencode` ships safety guardrails (blocks reading `.env*`, editing `.git/hooks/*`, `git push --force`, and `rm -rf`).
+- Hyperpowers skills/commands/agents are repo-scoped. If you want them in another project, copy the `.opencode/` directory into that project (or package them separately).
+
+### Claude Code
+
 Install from the Claude Code plugin marketplace:
 
-```
+```text
 /plugin marketplace add withzombies/hyperpowers
 /plugin install hyperpowers@hyperpowers
 ```
@@ -117,7 +164,7 @@ Verify installation by running `/help` - you should see the hyperpowers slash co
 
 To update the plugin later:
 
-```
+```text
 /plugin update hyperpowers
 ```
 
