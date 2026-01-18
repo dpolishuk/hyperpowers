@@ -125,6 +125,12 @@ This enables:
 - Skills via `opencode-skills` auto-discovery from `.opencode/skills/hyperpowers-*`
 - Safety guardrails plugin from `.opencode/plugin/hyperpowers-safety.ts`
 
+**Verify in OpenCode:**
+- Type `/brainstorm` and confirm OpenCode expands the prompt from `.opencode/command/brainstorm.md`
+- Invoke an agent like `@code-reviewer` and confirm it runs in subagent mode
+- Verify skills tools exist by running any Hyperpowers command (they reference tools like `skills_hyperpowers_brainstorming`)
+- Optional safety check: try reading `.env` (it should be blocked by the safety plugin)
+
 **Option B: Install the safety plugin into any OpenCode project (npm)**
 
 1. Add the plugin to your project's `opencode.json`:
