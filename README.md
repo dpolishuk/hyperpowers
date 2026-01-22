@@ -174,31 +174,45 @@ Then restart OpenCode.
 
 ### Claude Code
 
-Local development (load the plugin straight from this repo):
+**Option A: Local development** (load the plugin straight from this repo):
 
 ```text
 claude --plugin-dir .
 ```
 
-Install this repo as a Claude Code plugin (local marketplace or git URL):
+**Option B: Install from local path** (add marketplace, then install plugin):
 
 ```text
-/plugin marketplace add /absolute/path/to/myhyperpowers
-# or: /plugin marketplace add dpolishuk/myhyperpowers
+# Add your local clone as a marketplace (use the actual absolute path)
+/plugin marketplace add /Users/your-username/work/hyperpowers
+
+# Install from the marketplace you just added
 /plugin install myhyperpowers@myhyperpowers --scope user
 ```
 
-Use `--scope project` or `--scope local` if you want the install scoped to a project or a single session.
+**Option C: Install from GitHub** (requires marketplace published to GitHub):
 
-Verify installation by running `/help` - you should see the Hyperpowers slash commands listed.
+```text
+# Add GitHub repo as marketplace
+/plugin marketplace add dpolishuk/myhyperpowers
 
-To update the plugin later:
+# Install from the marketplace
+/plugin install myhyperpowers@myhyperpowers --scope user
+```
+
+**Note:** The format is `marketplace-name@plugin-name`. In this case both are `myhyperpowers`.
+
+**Scopes:** Use `--scope project` or `--scope local` if you want the install scoped to a project or a single session.
+
+**Verify:** Run `/help` - you should see Hyperpowers slash commands listed.
+
+**Update later:**
 
 ```text
 /plugin update myhyperpowers@myhyperpowers
 ```
 
-If you previously installed a legacy name, uninstall and reinstall:
+**Migrating from legacy names:**
 
 ```text
 /plugin uninstall hyperpowers@hyperpowers
