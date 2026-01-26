@@ -74,27 +74,96 @@ All agents are configured with `model: inherit`, meaning they respect your curre
 | code-reviewer | Capable model (sonnet, glm-4.7) | Requires reasoning and analysis |
 | test-effectiveness-analyst | Capable model (sonnet, glm-4.7) | Complex analysis of test quality |
 
-**To customize agent models:**
+---
 
-1. **OpenCode:** Edit `opencode.json` in your project:
-   ```json
-   {
-     "model": "provider/glm-4.7",
-     "agents": {
-       "test-runner": {
-         "model": "provider/glm-4.5"
-       }
-     }
-   }
-   ```
+#### OpenCode Model Resolution
 
-2. **Claude Code:** Set your preferred model in settings, or edit agent frontmatter in `.opencode/agents/*.md`:
-   ```yaml
-   ---
-   model: glm-4.5
-   mode: subagent
-   ---
-   ```
+In OpenCode, models are resolved in this priority order:
+
+```
+1. opencode.json → agents.agent-name.model (HIGHEST)
+2. opencode.json → model (top-level)
+3. Agent frontmatter → model: inherit
+4. Provider default (LOWEST)
+```
+
+**How `model: inherit` works:**
+
+```yaml
+# .opencode/agents/test-runner.md
+---
+model: inherit  # Uses opencode.json configuration
+---
+```
+
+**Example configurations:**
+
+```json
+{
+  "comment": "Option 1: All agents use same model",
+  "model": "glm/glm-4.7"
+}
+```
+
+```json
+{
+  "comment": "Option 2: Override specific agents",
+  "model": "glm/glm-4.7",
+  "agents": {
+    "test-runner": { "model": "glm/glm-4.5" },
+    "codebase-investigator": { "model": "glm/glm-4.5" }
+  }
+}
+```
+
+**Provider format:**
+
+```json
+{
+  "provider": {
+    "glm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": { "baseURL": "https://your-endpoint.com/v1" }
+    }
+  },
+  "model": "glm/glm-4.7"
+}
+```
+
+---
+
+#### Claude Code Model Resolution
+
+In Claude Code, models are resolved through environment variable mappings:
+
+```json
+{
+  "env": {
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.5-air",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7"
+  }
+}
+```
+
+| Agent model field | Mapped to env var |
+|------------------|-------------------|
+| `model: haiku` | `ANTHROPIC_DEFAULT_HAIKU_MODEL` |
+| `model: sonnet` | `ANTHROPIC_DEFAULT_SONNET_MODEL` |
+| `model: inherit` | Your current model selection |
+
+---
+
+**Quick setup - copy example configs:**
+
+```bash
+# For OpenCode
+cp docs/opencode.example.glm.json opencode.json
+
+# For Claude Code
+cat docs/claude-code.example.glm.json >> ~/.claude/settings.json
+```
+
+See [docs/README.md](docs/README.md) for more detailed examples.
 
 ### Hooks System
 
