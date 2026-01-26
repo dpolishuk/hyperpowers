@@ -142,118 +142,144 @@ Task("Run tests", "Run pytest tests/")
 
 ## Installation
 
+Choose your platform below:
+
 ### OpenCode
 
-Hyperpowers includes first-class OpenCode integration (commands, agents, skills, and a safety plugin).
-
-**Option A: Use Hyperpowers in this repo (recommended for contributors)**
-
-1. Install OpenCode.
-2. Run OpenCode from the repo root (so it discovers `opencode.json` and `.opencode/`):
+Quick start - run from the hyperpowers repo:
 
 ```bash
+# Clone or navigate to hyperpowers
+cd /path/to/hyperpowers
+
+# Run OpenCode (it auto-discovers opencode.json and .opencode/)
 opencode
 ```
 
-This enables:
-- Commands from `.opencode/commands/*.md` (invoked as `/<command>`, e.g. `/brainstorm`)
-- Agents from `.opencode/agents/*.md` (e.g. `@code-reviewer`, `@test-runner`)
-- Skills via local skill discovery from `.opencode/skills/`
-- Safety guardrails plugin from `.opencode/plugins/hyperpowers-safety.ts`
+That's it! Hyperpowers commands, agents, and skills are now available.
 
-**Verify in OpenCode:**
-- Type `/brainstorm` and confirm OpenCode expands the prompt from `.opencode/commands/brainstorm.md`
-- Invoke an agent like `@code-reviewer` and confirm it runs in subagent mode
-- Verify skills tools exist by running any Hyperpowers command (they reference tools like `skills_hyperpowers_brainstorming`)
-- Optional safety check: try reading `.env` (it should be blocked by the safety plugin)
+**What you get:**
+- Commands: `/brainstorm`, `/write-plan`, `/execute-plan`, etc.
+- Agents: `@code-reviewer`, `@test-runner`, `@codebase-investigator`, `@internet-researcher`
+- Skills: All workflows auto-loaded via local discovery
+- Safety: `.env` and sensitive files are protected
 
-**Option B: Install locally (no OpenCode plugin installs)**
+**Verify it works:**
+```
+/brainstorm
+# Should expand the brainstorming command
+```
 
-This is the fully local path: no `"plugin": [...]` in `opencode.json`.
+---
 
-1. Copy `opencode.json` and the `.opencode/` directory into your project.
-2. Install plugin dependencies locally:
+**For your own projects**, copy these files:
 
 ```bash
-cd .opencode
+# Copy to your project
+cp hyperpowers/opencode.json your-project/
+cp -r hyperpowers/.opencode your-project/
+
+# Install dependencies
+cd your-project/.opencode
 bun install
 cd ..
-```
 
-3. Start OpenCode from the project root:
-
-```bash
+# Run OpenCode
 opencode
 ```
 
-Notes:
-- Skill tools are provided by the local skills loader plugin: `.opencode/plugins/hyperpowers-skills.ts`.
-- Safety guardrails are provided by: `.opencode/plugins/hyperpowers-safety.ts`.
-- `bun install` downloads dependencies (e.g. `@opencode-ai/plugin`, `gray-matter`, `zod`) but does not require installing any OpenCode plugins via npm.
+---
 
-**Portability:** `.opencode/plugins/hyperpowers-safety.ts` and `.opencode/plugins/hyperpowers-skills.ts` are self-contained, so copying `.opencode/` to another repo works.
-
-**Option C: Install the safety plugin into any OpenCode project (npm)**
-
-If you prefer a config-only install, add the plugin to your project's `opencode.json`:
+**Install via npm** (alternative):
 
 ```json
+// In your project's opencode.json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    "@dpolishuk/hyperpowers-opencode"
-  ]
+  "plugin": ["@dpolishuk/hyperpowers-opencode"]
 }
 ```
 
-Then restart OpenCode.
-
 ### Claude Code
 
-**Option A: Local development** (load the plugin straight from this repo):
+**Recommended: Install from GitHub**
+
+```text
+/plugin marketplace add dpolishuk/myhyperpowers
+/plugin install myhyperpowers@myhyperpowers --scope user
+```
+
+**Local development** (if you're contributing):
 
 ```text
 claude --plugin-dir .
 ```
 
-**Option B: Install from local path** (add marketplace, then install plugin):
+**From local clone:**
 
 ```text
-# Add your local clone as a marketplace (use the actual absolute path)
-/plugin marketplace add /Users/your-username/work/hyperpowers
-
-# Install from the marketplace you just added
+/plugin marketplace add /absolute/path/to/hyperpowers
 /plugin install myhyperpowers@myhyperpowers --scope user
 ```
 
-**Option C: Install from GitHub** (requires marketplace published to GitHub):
+**Verify installation:**
 
 ```text
-# Add GitHub repo as marketplace
-/plugin marketplace add dpolishuk/myhyperpowers
-
-# Install from the marketplace
-/plugin install myhyperpowers@myhyperpowers --scope user
+/help
+# Should show /hyperpowers:* commands
 ```
 
-**Note:** The format is `marketplace-name@plugin-name`. In this case both are `myhyperpowers`.
+### After Installation: Configure Models
 
-**Scopes:** Use `--scope project` or `--scope local` if you want the install scoped to a project or a single session.
+All agents use `model: inherit` by default, meaning they follow your current model selection. To customize:
 
-**Verify:** Run `/help` - you should see Hyperpowers slash commands listed.
+```json
+// opencode.json (OpenCode)
+{
+  "model": "provider/glm-4.7",
+  "agents": {
+    "test-runner": { "model": "provider/glm-4.5" }
+  }
+}
+```
 
-**Update later:**
+Or set your preferred model in Claude Code settings.
+
+See [Model Configuration](#model-configuration) for recommendations.
+
+### Troubleshooting
+
+**OpenCode:**
+
+| Issue | Solution |
+|-------|----------|
+| Commands not found | Ensure you're running `opencode` from a directory with `opencode.json` |
+| Agents not working | Check that `.opencode/agents/*.md` files exist and have valid YAML frontmatter |
+| Skills not loading | Run `bun install` in `.opencode/` directory to install dependencies |
+| `.env` not protected | Verify `.opencode/plugins/hyperpowers-safety.ts` exists and is loaded |
+
+**Claude Code:**
+
+| Issue | Solution |
+|-------|----------|
+| Commands not showing | Run `/plugin list` to verify installation |
+| Plugin not loading | Check `~/.claude/plugins/` for `myhyperpowers@myhyperpowers` directory |
+| Hooks not firing | Restart Claude Code after installation |
+| Models not inheriting | Ensure agent files have `model: inherit` in frontmatter |
+
+**Getting help:**
+
+- OpenCode: Check `.opencode/` directory structure matches repository
+- Claude Code: Run `/plugin info myhyperpowers@myhyperpowers` for diagnostics
+- Both: Open an issue at https://github.com/dpolishuk/myhyperpowers/issues
+
+**Updating:**
 
 ```text
+# Claude Code
 /plugin update myhyperpowers@myhyperpowers
-```
 
-**Migrating from legacy names:**
-
-```text
-/plugin uninstall hyperpowers@hyperpowers
-/plugin uninstall withzombies-hyper@withzombies-hyper
-/plugin install myhyperpowers@myhyperpowers --scope user
+# OpenCode: git pull in the hyperpowers directory
 ```
 
 ## Usage
