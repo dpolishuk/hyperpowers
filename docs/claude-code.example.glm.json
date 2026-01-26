@@ -1,0 +1,16 @@
+{
+  "comment": "Claude Code settings.json for GLM models",
+  "comment": "Location: ~/.claude/settings.json (global) or .claude/settings.json (project)",
+  "env": {
+    "comment": "Map Anthropic model aliases to GLM models",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.5-air",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-4.7"
+  },
+  "agents": {
+    "comment": "Agents inherit from env mappings above",
+    "comment": "Fast agents (test-runner, investigator) use haiku -> glm-4.5-air",
+    "comment": "Capable agents (code-reviewer) use sonnet -> glm-4.7",
+    "comment": "Override agent models in .claude/agents/*/agent.json if needed"
+  }
+}

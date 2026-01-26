@@ -1,0 +1,12 @@
+{
+  "comment": "Claude Code settings.json for Anthropic Claude models",
+  "comment": "Location: ~/.claude/settings.json (global) or .claude/settings.json (project)",
+  "comment": "This is the default - no env mappings needed",
+  "comment": "Agents will use haiku, sonnet, opus based on their model field",
+  "env": {
+    "comment": "Optional: override default models",
+    "comment": "ANTHROPIC_DEFAULT_HAIKU_MODEL": "anthropic/claude-haiku-4-5-20250514",
+    "comment": "ANTHROPIC_DEFAULT_SONNET_MODEL": "anthropic/claude-sonnet-4-5-20250514",
+    "comment": "ANTHROPIC_DEFAULT_OPUS_MODEL": "anthropic/claude-opus-4-5-20250514"
+  }
+}

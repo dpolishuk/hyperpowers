@@ -1,0 +1,14 @@
+{
+  "comment": "Claude Code settings.json - Mixed providers configuration",
+  "comment": "Location: ~/.claude/settings.json (global) or .claude/settings.json (project)",
+  "env": {
+    "comment": "Main model uses GLM-4.7",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.7",
+    "comment": "Fast agents use GLM-4.5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.5-air"
+  },
+  "agents": {
+    "comment": "Agent-specific overrides via CLAUDE_CODE_SUBAGENT_MODEL env var",
+    "comment": "Or set per-agent in .claude/agents/*/agent.json"
+  }
+}
