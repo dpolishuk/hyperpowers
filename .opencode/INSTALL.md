@@ -3,59 +3,124 @@
 ## Prerequisites
 
 - [OpenCode.ai](https://opencode.ai) installed
-- Node.js installed
-- Git installed
+- [bun](https://bun.sh) for runtime and dependency management
+- Git installed (for cloning)
 
-## Installation Steps
+## Quick Install
 
-### 1. Install Hyperpowers
+### Option 1: Using the Install Script (Recommended)
+
+From the hyperpowers repository:
 
 ```bash
-mkdir -p ~/.config/opencode/hyperpowers
+# Clone the repository
+git clone https://github.com/dpolishuk/hyperpowers.git ~/hyperpowers
+cd ~/hyperpowers
+
+# Run the install script
+./scripts/install-opencode-plugin.sh
+```
+
+For development (symlinks for live reload):
+
+```bash
+./scripts/install-opencode-plugin.sh --symlink
+```
+
+### Option 2: Manual Install
+
+```bash
+# 1. Clone to config directory
+mkdir -p ~/.config/opencode
 git clone https://github.com/dpolishuk/hyperpowers.git ~/.config/opencode/hyperpowers
-```
 
-### 2. Register Plugin
-
-Create a symlink so OpenCode discovers the plugin:
-
-```bash
+# 2. Register plugin
 mkdir -p ~/.config/opencode/plugins
-ln -sf ~/.config/opencode/hyperpowers/.opencode/plugins/hyperpowers-skills.ts ~/.config/opencode/plugins/hyperpowers-skills.ts
+ln -sf ~/.config/opencode/hyperpowers/.opencode/plugins/hyperpowers-skills.ts ~/.config/opencode/plugins/
+ln -sf ~/.config/opencode/hyperpowers/.opencode/plugins/cass-memory.ts ~/.config/opencode/plugins/
+ln -sf ~/.config/opencode/hyperpowers/.opencode/plugins/hyperpowers-safety.ts ~/.config/opencode/plugins/
+
+# 3. Install dependencies
+cd ~/.config/opencode
+bun install
+
+# 4. Restart OpenCode
+opencode reload
 ```
 
-### 3. Restart OpenCode
+## What Gets Installed
 
-Restart OpenCode. The plugin will automatically discover skills from the cloned directory.
+| Type | Location | Source |
+|------|----------|--------|
+| Plugins | `~/.config/opencode/plugins/` | `.opencode/plugins/*.ts` |
+| Skills | `~/.config/opencode/skills/` | `.opencode/skills/*/` |
+| Agents | `~/.config/opencode/agents/` | `.opencode/agents/*.md` |
+| Commands | `~/.config/opencode/commands/` | `.opencode/commands/*.md` |
 
-You should see hyperpowers skills when you type `/brainstorm`, `/write-plan`, `/beads-triage`, etc.
+## How It Works
+
+The hyperpowers plugin for OpenCode:
+
+1. **Discovers skills** from XDG/config directories
+2. **Exposes tools** for each skill discovered
+3. **Loads skill content** when invoked via tool calls
+4. **Integrates with agents** for specialized tasks
+
+### Skill Discovery Order
+
+Skills are loaded in this order (later overrides earlier):
+
+1. `~/.config/opencode/skills/` (global)
+2. `~/.opencode/skills/` (user home)
+3. `.opencode/skills/` (project-local)
+
+### Plugin Architecture
+
+```
+.opencode/
+├── plugins/
+│   ├── hyperpowers-skills.ts    # Main skill discovery plugin
+│   ├── cass-memory.ts           # Cass memory integration
+│   └── hyperpowers-safety.ts    # Safety checks
+├── skills/                       # Skill definitions (SKILL.md)
+├── agents/                       # Agent prompts
+├── commands/                     # Slash command definitions
+└── package.json                  # Dependencies
+```
 
 ## Usage
 
-### Finding Skills
-
-List all available hyperpowers skills:
+After installation, restart OpenCode:
 
 ```bash
-# This shows all discovered skills
+opencode reload
+# or restart your OpenCode session
 ```
 
-### Using Skills
+### Available Skills
 
-Skills are auto-discovered from `~/.config/opencode/hyperpowers/.opencode/skills/`:
+Once installed, these skills are available:
 
-```bash
-# Use brainstorming skill
-/brainstorm [topic]
+| Skill | Description |
+|-------|-------------|
+| `brainstorming` | Socratic questioning for requirements refinement |
+| `writing-plans` | Create detailed implementation plans |
+| `executing-plans` | Implement tasks with continuous tracking |
+| `test-driven-development` | RED-GREEN-REFACTOR cycle enforcement |
+| `debugging-with-tools` | Systematic debugging workflow |
+| `fixing-bugs` | Complete bug fixing workflow |
+| `verification-before-completion` | Evidence-based verification |
+| `review-implementation` | Review against spec and standards |
+| `sre-task-refinement` | Corner case analysis (uses Opus 4.1) |
+| `analyzing-test-effectiveness` | Audit test quality |
+| `refactoring-safely` | Safe refactoring (change→test→commit) |
+| `writing-skills` | TDD for documentation |
 
-# Use writing-plans skill
-/write-plan [feature description]
+### Invoking Skills
 
-# Use executing-plans skill
-/execute-plan
-```
+In the OpenCode TUI, skills are exposed as tools. The AI will automatically invoke relevant skills based on context.
 
-### Personal Skills
+## Personal Skills
 
 Create your own skills in `~/.config/opencode/skills/`:
 
@@ -68,7 +133,11 @@ Create `~/.config/opencode/skills/my-skill/SKILL.md`:
 ```markdown
 ---
 name: my-skill
-description: Use when [condition] - [what it does]
+description: Use when [condition] - [what it does] (min 20 chars)
+allowed-tools:
+  - read
+  - edit
+  - grep
 ---
 
 # My Skill
@@ -77,11 +146,11 @@ description: Use when [condition] - [what it does]
 ```
 
 **Skill Priority:**
-- `project:skill-name` - Force project skill lookup
-- `skill-name` - Searches project → personal → hyperpowers
-- `hyperpowers:skill-name` - Force hyperpowers skill lookup
+- Project skills (`.opencode/skills/`) highest priority
+- Personal skills (`~/.config/opencode/skills/`) medium priority
+- Hyperpowers skills lowest priority
 
-### Project Skills
+## Project Skills
 
 Create project-specific skills in your OpenCode project:
 
@@ -103,44 +172,6 @@ description: Use when [condition] - [what it does]
 [Your skill content here]
 ```
 
-**Skill Priority:** Project skills override personal skills, which override hyperpowers skills.
-
-## Available Skills
-
-### Workflow Skills
-
-- **brainstorming** - Interactive design refinement using Socratic method
-- **writing-plans** - Create detailed implementation plans with bite-sized tasks
-- **executing-plans** - Execute plans in batches with review checkpoints
-- **refactoring-safely** - Test-preserving transformations in small steps
-- **test-driven-development** - RED-GREEN-REFACTOR cycle for implementation
-- **verification-before-completion** - Evidence before claiming work complete
-- **debugging-with-tools** - Systematic debugging using tools before fixes
-- **fixing-bugs** - Complete workflow from discovery to closure
-- **root-cause-tracing** - Trace bugs backward through call stack
-- **finishing-a-development-branch** - Close epic, present integration options
-
-### Quality & Review Skills
-
-- **analyzing-test-effectiveness** - Audit test quality with Google Fellow SRE scrutiny
-- **review-implementation** - Verify implementation against bd spec
-- **testing-anti-patterns** - Prevent tautological tests, coverage gaming
-
-### Advanced Operations
-
-- **managing-bd-tasks** - Splitting, merging, dependencies, metrics for bd tasks
-- **sre-task-refinement** - Apply Opus 4.1 corner-case analysis to tasks
-- **dispatching-parallel-agents** - Launch multiple Claude agents for independent failures
-- **debugging-with-tools** - Systematic investigation before fixes
-- **brainstorming** - Socratic questioning for requirements refinement
-- **using-hyper** - Mandatory skill-first workflow (meta-skill)
-
-### Specialized Skills
-
-- **skills-auto-activation** - Hooks for deterministic skill activation
-- **building-hooks** - Create custom OpenCode hooks progressively
-- **writing-skills** - TDD for documentation (test with subagents before writing)
-
 ## Commands
 
 All hyperpowers commands are auto-discovered from the cloned repository:
@@ -152,9 +183,37 @@ All hyperpowers commands are auto-discovered from the cloned repository:
 - `/review-implementation` - Verify implementation fidelity
 - `/beads-triage` - Run `bv --robot-triage` and return raw JSON
 
-## Beads triage
+## Beads Triage
 
 `/beads-triage [optional args]` runs `bv --robot-triage` and returns raw JSON only. If `bv` is missing, the skill installs it using the official install script before running triage.
+
+## Development
+
+### Live Reload Development
+
+For development, use symlinks to enable live reload:
+
+```bash
+./scripts/install-opencode-plugin.sh --symlink
+```
+
+Changes to `.opencode/` files will be reflected immediately upon OpenCode reload.
+
+### Adding New Skills
+
+1. Create a new directory in `.opencode/skills/<skill-name>/`
+2. Add `SKILL.md` with frontmatter
+3. Reinstall the plugin (or use symlinks for dev)
+4. Reload OpenCode: `opencode reload`
+
+### Plugin Development
+
+The main plugin is in `.opencode/plugins/hyperpowers-skills.ts`:
+
+- Discovers `SKILL.md` files using `Bun.glob()`
+- Parses frontmatter with `gray-matter`
+- Validates with `zod` schemas
+- Exposes tools via `@opencode-ai/plugin` SDK
 
 ## Updating
 
@@ -163,26 +222,49 @@ cd ~/.config/opencode/hyperpowers
 git pull
 ```
 
+If using symlinks, changes are reflected immediately after reload.
+If using copy mode, rerun the install script.
+
 ## Troubleshooting
 
 ### Plugin not loading
 
 1. Check symlink exists: `ls -la ~/.config/opencode/plugins/`
-2. Check OpenCode logs for errors
-3. Verify Node.js is installed: `node --version`
+2. Check OpenCode logs: `opencode --log-level=debug`
+3. Verify bun is installed: `bun --version`
 
 ### Skills not found
 
 1. Verify skills directory exists: `ls ~/.config/opencode/hyperpowers/.opencode/skills/`
 2. Check each skill has `SKILL.md` file
-3. Use command name to test discovery
+3. Verify frontmatter is valid (use `--log-level=debug`)
 
-### Commands not found
+### Dependencies missing
 
-1. Verify commands directory exists: `ls ~/.config/opencode/hyperpowers/.opencode/commands/`
-2. Check each command is valid markdown with YAML frontmatter
+Reinstall dependencies:
+
+```bash
+cd ~/.config/opencode
+bun install
+```
+
+## Uninstall
+
+Remove installed files:
+
+```bash
+rm -rf ~/.config/opencode/hyperpowers
+rm -rf ~/.config/opencode/plugins/hyperpowers-*.ts
+rm -rf ~/.config/opencode/skills/hyperpowers-*
+rm -rf ~/.config/opencode/agents/*
+rm -rf ~/.config/opencode/commands/*
+
+# Keep dependencies or clean all:
+rm -rf ~/.config/opencode/node_modules
+```
 
 ## Getting Help
 
 - Report issues: https://github.com/dpolishuk/hyperpowers/issues
 - Documentation: https://github.com/dpolishuk/hyperpowers
+- OpenCode Docs: https://opencode.ai/docs/
