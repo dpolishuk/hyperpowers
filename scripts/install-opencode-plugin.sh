@@ -238,8 +238,12 @@ install_plugin() {
         fi
     fi
 
-    # Install dependencies in the config directory
+    # Copy package.json with dependencies
     step "Installing plugin dependencies..."
+    if [[ -f "$OPENCODE_DIR/package.json" ]]; then
+        info "Copying package.json with required dependencies..."
+        cp "$OPENCODE_DIR/package.json" "$CONFIG_DIR/package.json"
+    fi
     cd "$CONFIG_DIR"
     bun install
 
