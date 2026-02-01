@@ -1,7 +1,6 @@
 ---
 description: Runs tests/commands and reports only summary + failures
 mode: subagent
-model: inherit
 temperature: 0.0
 permission:
   edit: deny

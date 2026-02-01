@@ -1,7 +1,6 @@
 ---
 description: Reviews code for best practices and plan alignment
 mode: subagent
-model: inherit
 temperature: 0.1
 permission:
   edit: deny

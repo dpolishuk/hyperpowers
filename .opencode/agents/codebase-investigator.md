@@ -1,7 +1,6 @@
 ---
 description: Explores the repo to verify patterns and file locations
 mode: subagent
-model: inherit
 temperature: 0.0
 permission:
   edit: deny

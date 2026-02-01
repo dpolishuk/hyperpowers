@@ -1,7 +1,6 @@
 ---
 description: Autonomous reviewer for continuous execution. Validates tasks against epic, researches patterns via web, returns PASS/NEEDS_FIX/APPROVED/GAPS_FOUND verdicts.
 mode: subagent
-model: inherit
 temperature: 0.2
 permission:
   edit: deny

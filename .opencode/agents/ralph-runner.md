@@ -1,8 +1,6 @@
 ---
 description: YOLO mode epic executor. Runs execute-ralph workflow with all permissions auto-approved. No confirmation prompts.
 mode: primary
-model: inherit
-temperature: 0.3
 permission:
   edit: allow
   write: allow

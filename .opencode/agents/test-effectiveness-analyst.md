@@ -1,7 +1,6 @@
 ---
 description: Audits tests for real bug-catching power
 mode: subagent
-model: inherit
 temperature: 0.1
 permission:
   edit: deny
