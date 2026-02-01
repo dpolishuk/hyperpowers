@@ -1,10 +1,10 @@
 ---
 name: execute-ralph
-description: Execute entire bd epic autonomously without user interruption. Uses configurable model for continuous review (default opus). Researches unclear patterns via Perplexity/web search. Only stops on critical failures.
+description: Execute entire bd epic autonomously without user interruption. Multi-phase review (5 parallel agents + final critical review). Auto-commits after each task. Creates git branch from epic name.
 ---
 
 <skill_overview>
-Execute complete epic without STOP checkpoints. After each task: dispatch autonomous-reviewer for validation. If issues found: fix autonomously (max 2 iterations). At end: comprehensive epic review. Only presents summary when all tasks complete or on critical failure.
+Execute complete epic without STOP checkpoints. Creates feature branch from epic name. After each task: auto-commit + 5 parallel review agents. If issues found: fix autonomously (max 2 iterations). At end: 2-agent critical-only review. Only presents summary when all tasks complete or on critical failure.
 </skill_overview>
 
 <rigidity_level>
@@ -15,16 +15,18 @@ MEDIUM FREEDOM - Follow the execution loop strictly. Adapt to reviewer feedback 
 
 | Phase | Action | Outcome |
 |-------|--------|---------|
-| **0. Load** | `bd show bd-1`, `bd dep tree bd-1` | Epic context loaded |
+| **0. Setup** | Smart triage + create branch | Branch created, epic loaded |
 | **1. Execute** | TDD per task, test-runner verification | Task implemented |
-| **2. Review** | Dispatch autonomous-reviewer | PASS or NEEDS_FIX |
-| **3. Fix** | If NEEDS_FIX: fix, re-review (max 2x) | Issue resolved or flagged |
+| **1b. Commit** | Auto-commit completed task | Changes saved |
+| **2. Review** | 5 parallel review agents | Issues collected |
+| **3. Fix** | If issues: fix, re-review (max 2x) | Issue resolved or flagged |
 | **4. Loop** | Repeat 1-3 for all tasks | All tasks done |
-| **5. Final** | Comprehensive epic review | APPROVED or GAPS_FOUND |
-| **6. Complete** | Present summary | User sees results |
+| **5. Final** | 2-agent critical-only review | APPROVED or GAPS_FOUND |
+| **6. Complete** | Close epic, archive | User sees summary |
 
-**Configuration:**
-- `--reviewer-model=opus` (default) | `sonnet` | Model for autonomous-reviewer
+**Review Agents:**
+- Phase 2: quality, implementation, testing, simplification, documentation (5 parallel)
+- Phase 5: quality, implementation only (2 critical)
 
 </quick_reference>
 
@@ -46,7 +48,7 @@ MEDIUM FREEDOM - Follow the execution loop strictly. Adapt to reviewer feedback 
 
 <the_process>
 
-## Phase 0: Smart Triage & Health Check
+## Phase 0: Smart Triage & Branch Setup
 
 ### Step 0a: Get Smart Triage
 
@@ -66,22 +68,23 @@ Parse JSON to understand:
 - `has_cycles: true` → Alert user about dependency cycles
 - `actionable_count: 0` → Nothing to work on
 
-### Step 0c: Load Top Pick Context
+### Step 0c: Load Top Pick & Create Branch
 
 ```bash
 bv -robot-next 2>/dev/null  # Get optimal next task
 ```
 
-Returns:
-```json
-{
-  "id": "bd-xxx",
-  "claim_command": "bd update bd-xxx --status=in_progress",
-  "show_command": "bd show bd-xxx"
-}
+Run `show_command` to load full details. If type is "epic":
+
+**Create feature branch from epic title:**
+```bash
+# Convert epic title to branch name (lowercase, hyphens, no special chars)
+BRANCH_NAME=$(echo "[epic-title]" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-')
+git checkout -b "feature/${BRANCH_NAME}"
 ```
 
-Run `show_command` to load full details. If type is "epic":
+Example: "User Authentication Flow" → `feature/user-authentication-flow`
+
 ```bash
 bd dep tree bd-xxx  # Understand task structure
 ```
@@ -94,6 +97,7 @@ bd dep tree bd-xxx  # Understand task structure
 
 **Create TodoWrite for ALL tasks upfront:**
 ```
+Branch: feature/[epic-name]
 - bd-2: [title] (pending)
 - bd-3: [title] (pending)
 - bd-4: [title] (pending)
@@ -122,43 +126,90 @@ bd show bd-N                          # Load details
 bd close bd-N  # After implementation complete
 ```
 
+### Step 1b: Auto-Commit
+
+After each task completion, commit changes:
+
+```bash
+git add -A
+git commit -m "Complete bd-N: [task title]
+
+- [Brief summary of what was implemented]
+- Tests: passing
+
+Part of epic: bd-1 - [epic title]"
+```
+
 **Update TodoWrite:**
 ```
-- bd-2: [title] ✓
+Branch: feature/[epic-name]
+Commits: 1
+- bd-2: [title] ✓ (committed)
 - bd-3: [title] (in progress)
 - bd-4: [title] (pending)
 ```
 
 → Proceed to Phase 2
 
-## Phase 2: Post-Task Review
+## Phase 2: Multi-Agent Parallel Review
 
-Dispatch autonomous-reviewer with configured model:
+Dispatch **5 review agents in parallel** for comprehensive coverage:
 
 ```
-Dispatch hyperpowers:autonomous-reviewer:
-"Task Review for bd-N
+Dispatch IN PARALLEL:
 
-Epic: bd-1 - [epic title]
-Task: bd-N - [task title]
+1. review-quality:
+   "Review task bd-N implementation for bugs, security issues, race conditions.
+   Task: [title]
+   Files changed: [list]
+   Return: PASS or ISSUES_FOUND with severity and file:line references."
 
-Review this task implementation against epic requirements.
-Use web search to research any unclear patterns or best practices.
+2. review-implementation:
+   "Verify task bd-N achieves its stated goals.
+   Task requirements: [from bd show]
+   Epic requirements: [relevant subset]
+   Return: PASS or ISSUES_FOUND with missing/incomplete items."
 
-Epic Success Criteria:
-[list from epic]
+3. review-testing:
+   "Evaluate test coverage for task bd-N changes.
+   Files changed: [list]
+   Test files: [list]
+   Return: PASS or ISSUES_FOUND with coverage gaps."
 
-Epic Anti-Patterns (FORBIDDEN):
-[list from epic]
+4. review-simplification:
+   "Check for over-engineering in task bd-N.
+   Task scope: [what was requested]
+   Implementation: [what was built]
+   Return: PASS or ISSUES_FOUND with simplification recommendations."
 
-Return: PASS or NEEDS_FIX with specific issues and fix instructions."
+5. review-documentation:
+   "Check if docs need updates for task bd-N changes.
+   Changes: [API changes, config changes, new features]
+   Return: PASS or ISSUES_FOUND with documentation gaps."
 ```
 
-### If VERDICT: PASS
+### Collecting Results
+
+Wait for all 5 agents. Aggregate issues:
+
+```
+Review Results for bd-N:
+- Quality: PASS
+- Implementation: PASS
+- Testing: ISSUES_FOUND (1 MAJOR)
+- Simplification: PASS
+- Documentation: ISSUES_FOUND (1 MINOR)
+
+Issues to Address:
+1. [MAJOR/testing] No test for error case in handler.ts:45
+2. [MINOR/docs] New env var not documented in README
+```
+
+### If All PASS
 
 Log review result, continue to next task (Phase 1).
 
-### If VERDICT: NEEDS_FIX
+### If Any ISSUES_FOUND
 
 → Proceed to Phase 3
 
@@ -169,24 +220,42 @@ Log review result, continue to next task (Phase 1).
 - bd-N fix iteration: 1/2
 ```
 
+**Prioritize fixes by severity:**
+1. CRITICAL issues first
+2. MAJOR issues second
+3. MINOR issues (best effort)
+
 **For each issue:**
 1. Read the specific file:line reference
 2. Apply the fix instruction exactly
 3. Run tests via test-runner
 
 **After fixes applied:**
-- Re-dispatch autonomous-reviewer
-- If PASS: continue to next task
-- If still NEEDS_FIX and iteration < 2: repeat Phase 3
-- If still NEEDS_FIX and iteration = 2: flag for user, continue to next task
+```bash
+git add -A
+git commit -m "Fix review issues for bd-N (iteration 1)
+
+- [List of issues fixed]"
+```
+
+**Re-run affected reviewers only:**
+- If testing issue fixed → re-run review-testing
+- If quality issue fixed → re-run review-quality
+- etc.
+
+**Outcomes:**
+- If all PASS: continue to next task
+- If still ISSUES_FOUND and iteration < 2: repeat Phase 3
+- If still ISSUES_FOUND and iteration = 2: flag for user, continue to next task
 
 **Flagging format:**
 ```
 FLAGGED FOR USER REVIEW:
 - Task: bd-N
-- Issue: [description]
+- Unfixed Issues:
+  1. [MAJOR/testing] description
+  2. [MINOR/docs] description
 - Attempted fixes: 2 iterations
-- Current state: [description]
 - Recommendation: [what user should check]
 ```
 
@@ -203,49 +272,60 @@ Repeat Phases 1-3 until:
 
 If critical blocker: stop loop, proceed to summary with blocker documented.
 
-## Phase 5: Comprehensive Final Review
+## Phase 5: Final Critical-Only Review
 
-After all tasks complete (or max tasks reached):
+After all tasks complete, run **2-agent critical review** (quality + implementation only):
 
 ```
-Dispatch hyperpowers:autonomous-reviewer:
-"Epic Review for bd-1
+Dispatch IN PARALLEL:
 
-This is the FINAL comprehensive review before closing the epic.
+1. review-quality:
+   "FINAL REVIEW for epic bd-1.
+   Focus: CRITICAL and MAJOR issues only.
+   Scope: All changes in this epic.
 
-Epic: bd-1 - [title]
-Completed Tasks: [list]
+   Epic: [title]
+   All tasks completed: [list]
 
-Verify ALL success criteria are met.
-Verify NO anti-patterns were used.
-Use web search to research any concerning patterns.
+   Look for:
+   - Security vulnerabilities across the full implementation
+   - Integration issues between tasks
+   - Race conditions in combined code paths
 
-Success Criteria:
-[list from epic]
+   Return: APPROVED or CRITICAL_ISSUES with specific fixes needed."
 
-Anti-Patterns (must not be present):
-[list from epic]
+2. review-implementation:
+   "FINAL REVIEW for epic bd-1.
+   Focus: CRITICAL gaps only.
 
-Return: APPROVED or GAPS_FOUND with remediation tasks."
+   Epic requirements: [full list]
+   Completed tasks: [list]
+
+   Verify:
+   - ALL success criteria are actually met
+   - No requirements were lost between tasks
+   - Integration is complete
+
+   Return: APPROVED or CRITICAL_ISSUES with missing requirements."
 ```
 
-### If VERDICT: APPROVED
+### If Both APPROVED
 
 → Proceed to Phase 6
 
-### If VERDICT: GAPS_FOUND
+### If CRITICAL_ISSUES
 
 Create remediation tasks:
 ```bash
-bd create "Remediation: [gap description]" \
+bd create "Remediation: [issue description]" \
   --type task \
-  --design "[from reviewer's remediation task description]"
+  --design "[fix instructions from reviewer]"
 bd dep add bd-NEW bd-1 --type parent-child
 ```
 
 Execute remediation tasks (return to Phase 1).
 
-**Safety limit:** Max 3 remediation rounds. If still gaps after 3 rounds, flag for user and complete.
+**Safety limit:** Max 3 remediation rounds. If still issues after 3 rounds, flag for user and complete.
 
 ## Phase 6: Completion
 
@@ -254,15 +334,28 @@ Close epic:
 bd close bd-1
 ```
 
+Final commit (if any uncommitted changes):
+```bash
+git add -A
+git commit -m "Complete epic bd-1: [epic title]
+
+All tasks completed and reviewed.
+Final review: APPROVED"
+```
+
 Present comprehensive summary:
 
 ```markdown
 ## Epic bd-1 Complete - Autonomous Execution
 
-### Configuration
-- Reviewer model: [opus/sonnet]
+### Branch
+`feature/[epic-name]` - Ready for PR
+
+### Statistics
 - Total tasks: N
-- Fix iterations: M
+- Total commits: M
+- Fix iterations: X
+- Review agents invoked: Y
 
 ### Tasks Executed
 - bd-2: [title] ✓
@@ -270,20 +363,26 @@ Present comprehensive summary:
 - bd-4: [title] ✓
 
 ### Review Summary
-- Task reviews: X passed, Y needed fixes
-- Final review: APPROVED
-- Research queries: Z
+**Per-Task Reviews (5 agents each):**
+- bd-2: All PASS
+- bd-3: 2 issues found, fixed in 1 iteration
+- bd-4: All PASS
+
+**Final Review (2 agents):**
+- Quality: APPROVED
+- Implementation: APPROVED
 
 ### Issues Fixed Autonomously
-1. [Issue in bd-3: description, fix applied]
-2. [Issue in bd-5: description, fix applied]
+1. [MAJOR/testing] Missing error case test - added test
+2. [MINOR/docs] Undocumented env var - updated README
 
 ### Flagged for User Review
 - [Any items that couldn't be resolved]
 - [Or "None - all issues resolved autonomously"]
 
 ### Next Steps
-- [Any follow-up recommendations from final review]
+- Review branch `feature/[epic-name]`
+- Create PR when ready
 - [Or "Epic complete, no further action needed"]
 ```
 
@@ -298,7 +397,9 @@ Present comprehensive summary:
 3. **Max 3 remediation rounds** - After 3, complete with flags
 4. **Max 10 tasks per execution** - Safety limit to prevent runaway
 5. **Always use test-runner** - Keep verbose output out of context
-6. **Always dispatch reviewer** - Every task gets reviewed, no skipping
+6. **Always run all 5 reviewers** - Every task gets full review, no skipping
+7. **Always auto-commit** - Each task completion gets its own commit
+8. **Always create branch** - Never work directly on main
 
 ## What Triggers User Notification
 
@@ -311,11 +412,13 @@ Everything else: fix autonomously and continue.
 
 ## Anti-Patterns for This Skill
 
-- Skipping review "because task was simple"
+- Skipping reviewers "because task was simple"
 - Skipping TDD "to save time"
 - Ignoring reviewer feedback
 - Continuing past critical blockers
 - Not using web search when uncertain
+- Working on main branch instead of feature branch
+- Not committing after task completion
 
 </critical_rules>
 
@@ -324,10 +427,14 @@ Everything else: fix autonomously and continue.
 **This skill calls:**
 - test-driven-development (for implementing each task)
 - test-runner (for running tests without output pollution)
-- autonomous-reviewer (for post-task and final reviews)
+- review-quality (parallel reviewer)
+- review-implementation (parallel reviewer)
+- review-testing (parallel reviewer)
+- review-simplification (parallel reviewer)
+- review-documentation (parallel reviewer)
 
 **This skill is called by:**
-- User via `/hyperpowers:execute-ralph [--reviewer-model=opus|sonnet]`
+- User via `/hyperpowers:execute-ralph`
 - After writing-plans creates well-defined epic
 
 **Comparison to execute-plans:**
@@ -336,10 +443,21 @@ Everything else: fix autonomously and continue.
 |--------|---------------|---------------|
 | Checkpoints | STOP after each task | No stops |
 | User interaction | Required between tasks | Only on failure |
-| Review timing | Final only | After each task + final |
-| Reviewer model | Same as execution | Configurable (default opus) |
-| Research | None | Perplexity/web during review |
+| Review | Final only | 5 agents per task + 2 final |
+| Git workflow | Manual | Auto-branch + auto-commit |
 | Best for | Uncertain requirements | Well-defined epics |
+
+**Comparison to ralphex:**
+
+| Aspect | ralphex | execute-ralph |
+|--------|---------|---------------|
+| Multi-agent review | ✅ 5 parallel | ✅ 5 parallel |
+| Git branch | ✅ Auto | ✅ Auto |
+| Auto-commit | ✅ | ✅ |
+| Final review | ✅ 2 agents | ✅ 2 agents |
+| Smart triage | ❌ | ✅ bv robot-* |
+| bd integration | ❌ | ✅ Full |
+| Web dashboard | ✅ | ❌ CLI only |
 
 </integration>
 
@@ -348,9 +466,16 @@ Everything else: fix autonomously and continue.
 **bd command reference:**
 - See [bd commands](../common-patterns/bd-commands.md)
 
+**Review agents:**
+- review-quality: bugs, security, race conditions
+- review-implementation: requirements verification
+- review-testing: test coverage and quality
+- review-simplification: over-engineering detection
+- review-documentation: docs update needs
+
 **When stuck:**
 - 2 fix iterations failed → Flag and continue, let user review later
 - Critical blocker → Stop, document clearly, present summary
-- Reviewer keeps finding issues → Check if epic requirements are realistic
+- Reviewers keep finding issues → Check if epic requirements are realistic
 
 </resources>
