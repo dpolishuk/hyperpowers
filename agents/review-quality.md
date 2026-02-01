@@ -1,14 +1,15 @@
 ---
+name: review-quality
 description: Quality reviewer - finds bugs, security issues, race conditions, error handling gaps. Returns PASS or ISSUES_FOUND with severity.
-mode: subagent
-permission:
-  edit: deny
-  write: deny
-  bash: deny
-  read: allow
-  grep: allow
-  glob: allow
-  webfetch: allow
+tools:
+  - Read
+  - Grep
+  - Glob
+  - WebFetch
+disallowedTools:
+  - Edit
+  - Write
+  - Bash
 ---
 
 # Quality Review Agent

@@ -1,14 +1,15 @@
 ---
+name: review-implementation
 description: Implementation reviewer - verifies code achieves stated goals and requirements. Returns PASS or ISSUES_FOUND.
-mode: subagent
-permission:
-  edit: deny
-  write: deny
-  bash: deny
-  read: allow
-  grep: allow
-  glob: allow
-  webfetch: deny
+tools:
+  - Read
+  - Grep
+  - Glob
+disallowedTools:
+  - Edit
+  - Write
+  - Bash
+  - WebFetch
 ---
 
 # Implementation Review Agent
